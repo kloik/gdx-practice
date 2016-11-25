@@ -12,6 +12,9 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
 public class SampleGame extends ApplicationAdapter {
+
+    private final static Vector2 damping = new Vector2(.99f, .99f);
+
     SpriteBatch batch;
     FPSLogger fpsLogger;
     OrthographicCamera camera;
@@ -21,7 +24,6 @@ public class SampleGame extends ApplicationAdapter {
     Animation plane;
     float terrainOffset;
     float planeAnimTime;
-
     Vector2 planeVelocity = new Vector2();
     Vector2 planePosition = new Vector2();
     Vector2 planeDefaultPosition = new Vector2();
@@ -47,6 +49,8 @@ public class SampleGame extends ApplicationAdapter {
                 new TextureRegion(new Texture("planeRed3.png"))
         );
         plane.setPlayMode(Animation.PlayMode.LOOP);
+
+        resetScene();
     }
 
     @Override
