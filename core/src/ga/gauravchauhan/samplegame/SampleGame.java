@@ -62,6 +62,9 @@ public class SampleGame extends ApplicationAdapter {
         final float deltaTime = Gdx.graphics.getDeltaTime();
         terrainOffset -= 200 * deltaTime; // x0 - 200dt;
         planeAnimTime += deltaTime;
+
+        planeVelocity.add(gravity);
+        planeVelocity.mulAdd(planeVelocity, deltaTime);
     }
 
     private void drawScene() {
@@ -77,7 +80,7 @@ public class SampleGame extends ApplicationAdapter {
         batch.draw(terrainBelow, terrainOffset + terrainBelow.getRegionWidth(), 0);
         batch.draw(terrainAbove, terrainOffset, 480 - terrainAbove.getRegionHeight());
         batch.draw(terrainAbove, terrainOffset + terrainBelow.getRegionWidth(), 480 - terrainAbove.getRegionHeight());
-        batch.draw(plane.getKeyFrame(planeAnimTime), 350, 200);
+        batch.draw(plane.getKeyFrame(planeAnimTime), planePosition.x, planePosition.y);
         batch.end();
     }
 
