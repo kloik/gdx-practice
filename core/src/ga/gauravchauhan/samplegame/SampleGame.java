@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
 
 public class SampleGame extends ApplicationAdapter {
     SpriteBatch batch;
@@ -20,6 +21,11 @@ public class SampleGame extends ApplicationAdapter {
     Animation plane;
     float terrainOffset;
     float planeAnimTime;
+
+    Vector2 planeVelocity = new Vector2();
+    Vector2 planePosition = new Vector2();
+    Vector2 planeDefaultPosition = new Vector2();
+    Vector2 gravity = new Vector2();
 
     @Override
     public void create() {
@@ -73,6 +79,15 @@ public class SampleGame extends ApplicationAdapter {
         batch.draw(terrainAbove, terrainOffset + terrainBelow.getRegionWidth(), 480 - terrainAbove.getRegionHeight());
         batch.draw(plane.getKeyFrame(planeAnimTime), 350, 200);
         batch.end();
+    }
+
+    private void resetScene() {
+        terrainOffset = 0;
+        planeAnimTime = 0;
+        planeVelocity.set(0, 0);
+        gravity.set(0, -2);
+        planeDefaultPosition.set(400 - 88 / 2, 240 - 73 / 2);
+        planePosition.set(planeDefaultPosition.x, planeDefaultPosition.y);
     }
 
     @Override
