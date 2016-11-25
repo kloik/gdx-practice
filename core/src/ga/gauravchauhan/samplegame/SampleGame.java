@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
@@ -46,6 +47,10 @@ public class SampleGame extends ApplicationAdapter {
     TextureRegion tap1;
     Texture gameOver;
     GameState gameState = GameState.INIT;
+    Vector2 lastPillarPosition = new Vector2();
+    TextureRegion pillarUp;
+    TextureRegion pillarDown;
+    Rectangle planeRect = new Rectangle(), obstacleRect = new Rectangle();
 
     @Override
     public void create() {
@@ -65,6 +70,8 @@ public class SampleGame extends ApplicationAdapter {
         bgRegion = atlas.findRegion("background");
         terrainBelow = atlas.findRegion("groundGrass");
         terrainAbove = new TextureRegion(terrainBelow);
+        pillarUp = atlas.findRegion("rockGrassUp");
+        pillarDown = atlas.findRegion("rockGrassDown");
         terrainAbove.flip(true, true);
 
         plane = new Animation(.05f,
@@ -146,6 +153,22 @@ public class SampleGame extends ApplicationAdapter {
             terrainOffset -= terrainBelow.getRegionWidth();
         }
 
+        planeRect.set(planePosition.x + 16, planePosition.y, 50, 73);
+        for (Vector2 vec : pillars) {
+            float deltaPosition = planePosition.x - planeDefaultPosition.x;
+            vec.x -= deltaPosition;
+            if (vec.x + pillarUp.getRegionWidth() < -10) {
+                pillars.removeValue(vec, false);
+            }
+            if (vec.y == 1) {
+                obstacleRect.set(vec.x + 10, 0, pillarUp.getRegionWidth() - 20, pillarUp.getRegionHeight() - 10);
+            } else {
+                obstacleRect.set(vec.x ) // Page No. 70
+            }
+        }
+        if (lastPillarPosition.x < 400) {
+            addPillar();
+        }
     }
 
     private void drawScene() {
@@ -156,6 +179,13 @@ public class SampleGame extends ApplicationAdapter {
         batch.disableBlending();
         batch.draw(bgRegion, 0, 0);
         batch.enableBlending();
+        for (Vector2 vec : pillars) {
+            if (vec.y == 1) {
+                batch.draw(pillarUp, vec.x, 0);
+            } else {
+                batch.draw(pillarDown, vec.x, 480 - pillarDown.getRegionHeight());
+            }
+        }
 
         batch.draw(terrainBelow, terrainOffset, 0);
         batch.draw(terrainBelow, terrainOffset + terrainBelow.getRegionWidth(), 0);
@@ -191,6 +221,19 @@ public class SampleGame extends ApplicationAdapter {
         batch.dispose();
         atlas.dispose();
         gameOver.dispose();
+    }
+
+    private void addPillar() {
+        Vector2 pillarPosition = new Vector2();
+        if (pillars.size == 0) {
+            pillarPosition.x = (float) (800 + Math.random() * 600);
+        } else {
+            pillarPosition.x = lastPillarPosition.x + (float) (600 + Math.random() * 600);
+        }
+
+        pillarPosition.y = MathUtils.randomBoolean() ? 1 : -1;
+        lastPillarPosition = pillarPosition;
+        pillars.add(pillarPosition);
     }
 
     enum GameState {
