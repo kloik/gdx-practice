@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.FPSLogger;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -12,6 +13,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -20,26 +22,30 @@ public class SampleGame extends ApplicationAdapter {
     private final static Vector2 damping = new Vector2(.99f, .99f);
     private static final float TAP_DRAW_TIME_MAX = 1f;
     private static final float TOUCH_IMPULSE = 500;
-
     Viewport viewport;
     SpriteBatch batch;
     FPSLogger fpsLogger;
     OrthographicCamera camera;
-    TextureAtlas.AtlasRegion bgRegion;
-    TextureRegion terrainBelow;
-    TextureRegion terrainAbove;
     Animation plane;
     float terrainOffset;
+    float tapDrawTime;
     float planeAnimTime;
     Vector2 planeVelocity = new Vector2();
     Vector2 planePosition = new Vector2();
     Vector2 planeDefaultPosition = new Vector2();
     Vector2 gravity = new Vector2();
+    Vector2 tmpVector = new Vector2();
+    Vector2 scrollVelocity = new Vector2();
+    Vector3 touchPosition = new Vector3();
+    Array<Vector2> pillars = new Array<Vector2>();
     TextureAtlas atlas;
-    private Vector3 touchPosition = new Vector3();
-    private Vector2 tmpVector = new Vector2();
-    private float tapDrawTime;
-    private TextureRegion tapIndicator;
+    TextureRegion bgRegion;
+    TextureRegion terrainBelow;
+    TextureRegion terrainAbove;
+    TextureRegion tapIndicator;
+    TextureRegion tap1;
+    Texture gameOver;
+    GameState gameState = GameState.INIT;
 
     @Override
     public void create() {
@@ -53,7 +59,9 @@ public class SampleGame extends ApplicationAdapter {
         camera.setToOrtho(false, 800, 480);
         viewport = new FitViewport(800, 480, camera);
 
+        tap1 = atlas.findRegion("tap1");
         tapIndicator = atlas.findRegion("tap2");
+        gameOver = new Texture("gameOver.png");
         bgRegion = atlas.findRegion("background");
         terrainBelow = atlas.findRegion("groundGrass");
         terrainAbove = new TextureRegion(terrainBelow);
@@ -84,9 +92,24 @@ public class SampleGame extends ApplicationAdapter {
     }
 
     private void updateScene() {
-        final float deltaTime = Gdx.graphics.getDeltaTime();
+
+        if (planePosition.y < terrainBelow.getRegionHeight() - 35 ||
+                planePosition.y + 73 > 480 - terrainAbove.getRegionHeight() + 35) {
+            if (gameState != GameState.GAME_OVER) {
+                gameState = GameState.GAME_OVER;
+            }
+        }
 
         if (Gdx.input.justTouched()) {
+            if (gameState == GameState.INIT) {
+                gameState = GameState.ACTION;
+                return;
+            }
+            if (gameState == GameState.GAME_OVER) {
+                gameState = GameState.INIT;
+                resetScene();
+                return;
+            }
             touchPosition.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(touchPosition);
             // touch position done
@@ -98,12 +121,19 @@ public class SampleGame extends ApplicationAdapter {
                             planePosition.x, planePosition.y), 0, TOUCH_IMPULSE));
             tapDrawTime = TAP_DRAW_TIME_MAX;
         }
+
+        if (gameState != GameState.ACTION) {
+            return;
+        }
+        final float deltaTime = Gdx.graphics.getDeltaTime();
+
         tapDrawTime -= deltaTime;
 
         planeAnimTime += deltaTime;
 
         planeVelocity.scl(damping);
         planeVelocity.add(gravity);
+        planeVelocity.add(scrollVelocity);
         planePosition.mulAdd(planeVelocity, deltaTime);
 
         terrainOffset -= planePosition.x - planeDefaultPosition.x;
@@ -137,10 +167,17 @@ public class SampleGame extends ApplicationAdapter {
             batch.draw(tapIndicator, touchPosition.x - 29.5f, touchPosition.y - 29.5f);
         }
 
+        if (gameState == GameState.INIT) {
+            batch.draw(tap1, planePosition.x, planePosition.y - 80);
+        } else if (gameState == GameState.GAME_OVER) {
+            batch.draw(gameOver, 400 - 206, 240 - 80);
+        }
+
         batch.end();
     }
 
     private void resetScene() {
+        scrollVelocity.set(4, 0);
         terrainOffset = 0;
         planeAnimTime = 0;
         planeVelocity.set(10, 0);
@@ -153,5 +190,10 @@ public class SampleGame extends ApplicationAdapter {
     public void dispose() {
         batch.dispose();
         atlas.dispose();
+        gameOver.dispose();
+    }
+
+    enum GameState {
+        INIT, ACTION, GAME_OVER
     }
 }
