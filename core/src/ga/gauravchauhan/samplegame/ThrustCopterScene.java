@@ -1,7 +1,7 @@
 package ga.gauravchauhan.samplegame;
 
-import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.FPSLogger;
 import com.badlogic.gdx.graphics.GL20;
@@ -19,7 +19,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
-public class ThrustCopterScene extends ApplicationAdapter {
+public class ThrustCopterScene extends ScreenAdapter {
 
     private final static Vector2 damping = new Vector2(.99f, .99f);
     private static final float TAP_DRAW_TIME_MAX = 1f;
@@ -61,8 +61,7 @@ public class ThrustCopterScene extends ApplicationAdapter {
     Sound tapSound;
     Sound crashSound;
 
-    @Override
-    public void create() {
+    public ThrustCopterScene() {
         tapSound = Gdx.audio.newSound(Gdx.files.internal("sounds/pop.ogg"));
         crashSound = Gdx.audio.newSound(Gdx.files.internal("sounds/crash.ogg"));
         batch = new SpriteBatch();
@@ -108,7 +107,7 @@ public class ThrustCopterScene extends ApplicationAdapter {
     }
 
     @Override
-    public void render() {
+    public void render(float delta) {
         Gdx.gl.glClearColor(1, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         fpsLogger.log();
