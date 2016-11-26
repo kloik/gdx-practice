@@ -2,6 +2,7 @@ package ga.gauravchauhan.samplegame;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.FPSLogger;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -22,7 +23,8 @@ public class SampleGame extends ApplicationAdapter {
 
     private final static Vector2 damping = new Vector2(.99f, .99f);
     private static final float TAP_DRAW_TIME_MAX = 1f;
-    private static final float TOUCH_IMPULSE = 500;
+    private static final float TOUCH_IMPULSE = 400;
+    private static final int METEOR_SPEED = 60;
     Viewport viewport;
     SpriteBatch batch;
     FPSLogger fpsLogger;
@@ -51,9 +53,18 @@ public class SampleGame extends ApplicationAdapter {
     TextureRegion pillarUp;
     TextureRegion pillarDown;
     Rectangle planeRect = new Rectangle(), obstacleRect = new Rectangle();
+    Array<TextureAtlas.AtlasRegion> meteorTextures = new Array<TextureAtlas.AtlasRegion>();
+    TextureRegion selectedMeteorTexture;
+    boolean meteorInScene;
+    Vector2 meteorPosition = new Vector2(), meteorVelocity = new Vector2();
+    float nextMeteorIn;
+    Sound tapSound;
+    Sound crashSound;
 
     @Override
     public void create() {
+        tapSound = Gdx.audio.newSound(Gdx.files.internal("sounds/pop.ogg"));
+        crashSound = Gdx.audio.newSound(Gdx.files.internal("sounds/crash.ogg"));
         batch = new SpriteBatch();
         fpsLogger = new FPSLogger();
         // img = new Texture("badlogic.jpg");
@@ -81,6 +92,13 @@ public class SampleGame extends ApplicationAdapter {
         );
         plane.setPlayMode(Animation.PlayMode.LOOP);
 
+        meteorTextures.add(atlas.findRegion("meteorBrown_med2"));
+        meteorTextures.add(atlas.findRegion("meteorBrown_med1"));
+        meteorTextures.add(atlas.findRegion("meteorBrown_small1"));
+        meteorTextures.add(atlas.findRegion("meteorBrown_small2"));
+        meteorTextures.add(atlas.findRegion("meteorBrown_tiny1"));
+        meteorTextures.add(atlas.findRegion("meteorBrown_tiny2"));
+
         resetScene();
     }
 
@@ -99,6 +117,7 @@ public class SampleGame extends ApplicationAdapter {
     }
 
     private void updateScene() {
+
 
         if (planePosition.y < terrainBelow.getRegionHeight() - 35 ||
                 planePosition.y + 73 > 480 - terrainAbove.getRegionHeight() + 35) {
@@ -133,6 +152,27 @@ public class SampleGame extends ApplicationAdapter {
             return;
         }
         final float deltaTime = Gdx.graphics.getDeltaTime();
+        float deltaPosition = planePosition.x - planeDefaultPosition.x;
+
+        if (meteorInScene) {
+            obstacleRect.set(meteorPosition.x + 2, meteorPosition.y + 2,
+                    selectedMeteorTexture.getRegionWidth() - 4, selectedMeteorTexture.getRegionHeight() - 4);
+            if (planeRect.overlaps(obstacleRect)) {
+                if (gameState != GameState.GAME_OVER) {
+                    gameState = GameState.GAME_OVER;
+                }
+            }
+
+            meteorPosition.mulAdd(meteorVelocity, deltaTime);
+            meteorPosition.x -= deltaPosition;
+            if (meteorPosition.x < -10) {
+                meteorInScene = false;
+            }
+        }
+        nextMeteorIn -= deltaTime;
+        if (nextMeteorIn <= 0) {
+            launchMeteor();
+        }
 
         tapDrawTime -= deltaTime;
 
@@ -155,7 +195,6 @@ public class SampleGame extends ApplicationAdapter {
 
         planeRect.set(planePosition.x + 16, planePosition.y, 50, 73);
         for (Vector2 vec : pillars) {
-            float deltaPosition = planePosition.x - planeDefaultPosition.x;
             vec.x -= deltaPosition;
             if (vec.x + pillarUp.getRegionWidth() < -10) {
                 pillars.removeValue(vec, false);
@@ -163,12 +202,35 @@ public class SampleGame extends ApplicationAdapter {
             if (vec.y == 1) {
                 obstacleRect.set(vec.x + 10, 0, pillarUp.getRegionWidth() - 20, pillarUp.getRegionHeight() - 10);
             } else {
-                obstacleRect.set(vec.x ) // Page No. 70
+                obstacleRect.set(vec.x + 10, 480 - pillarDown.getRegionHeight() + 10, pillarUp.getRegionWidth() - 20, pillarUp.getRegionHeight());
+            }
+
+            if (planeRect.overlaps(obstacleRect)) {
+                if (gameState != GameState.GAME_OVER) {
+                    gameState = GameState.GAME_OVER;
+                }
             }
         }
         if (lastPillarPosition.x < 400) {
             addPillar();
         }
+    }
+
+    private void launchMeteor() {
+        nextMeteorIn = (float) (1.5 + Math.random() * 5);
+        if (meteorInScene) {
+            return;
+        }
+        meteorInScene = true;
+        int id = (int) (Math.random() * meteorTextures.size);
+        selectedMeteorTexture = meteorTextures.get(id);
+        meteorPosition.x = 810;
+        meteorPosition.y = (float) (80 + Math.random() * 320);
+        Vector2 destination = new Vector2();
+        destination.x = -10;
+        destination.y = (float) (80 + Math.random() * 320);
+        destination.sub(meteorPosition).nor();
+        meteorVelocity.mulAdd(destination, METEOR_SPEED);
     }
 
     private void drawScene() {
@@ -197,6 +259,10 @@ public class SampleGame extends ApplicationAdapter {
             batch.draw(tapIndicator, touchPosition.x - 29.5f, touchPosition.y - 29.5f);
         }
 
+        if (meteorInScene) {
+            batch.draw(selectedMeteorTexture, meteorPosition.x, meteorPosition.y);
+        }
+
         if (gameState == GameState.INIT) {
             batch.draw(tap1, planePosition.x, planePosition.y - 80);
         } else if (gameState == GameState.GAME_OVER) {
@@ -214,6 +280,10 @@ public class SampleGame extends ApplicationAdapter {
         gravity.set(0, -4);
         planeDefaultPosition.set(400 - 88 / 2, 240 - 73 / 2);
         planePosition.set(planeDefaultPosition.x, planeDefaultPosition.y);
+        pillars.removeValue(lastPillarPosition, true);
+
+        meteorInScene = false;
+        nextMeteorIn = (float) Math.random() * 5;
     }
 
     @Override
@@ -221,6 +291,10 @@ public class SampleGame extends ApplicationAdapter {
         batch.dispose();
         atlas.dispose();
         gameOver.dispose();
+        tapSound.dispose();
+        crashSound.dispose();
+        pillars.clear();
+        meteorTextures.clear();
     }
 
     private void addPillar() {
