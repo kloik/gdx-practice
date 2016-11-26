@@ -19,7 +19,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
-public class SampleGame extends ApplicationAdapter {
+public class ThrustCopterScene extends ApplicationAdapter {
 
     private final static Vector2 damping = new Vector2(.99f, .99f);
     private static final float TAP_DRAW_TIME_MAX = 1f;
